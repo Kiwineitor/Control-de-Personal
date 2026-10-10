@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "804876693328",
+    "project_id": "sistemacontrolpersonal-4b25c",
+    "storage_bucket": "sistemacontrolpersonal-4b25c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804876693328:android:59471f5792c3b6e1440655",
+        "android_client_info": {
+          "package_name": "com.uap.sisu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBF6ixdUt9CkkbnD8Ki-akfeQbv9vqFrr8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

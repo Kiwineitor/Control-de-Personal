@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SICOPE</string>
+    <string name="title_activity_main">SICOPE</string>
+    <string name="package_name">com.uap.sisu</string>
+    <string name="custom_url_scheme">com.uap.sisu</string>
+</resources>

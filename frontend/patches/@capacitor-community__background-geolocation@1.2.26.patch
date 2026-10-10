@@ -1,0 +1,831 @@
+diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
+index 9e65984854cfb3d7bde5d56b0ab25974c8eccf6e..3c0f49721b86609230093fead5de5586ce48fc67 100644
+--- a/android/src/main/AndroidManifest.xml
++++ b/android/src/main/AndroidManifest.xml
+@@ -16,6 +16,7 @@
+     <!-- Android SDK 33+ requires the POST_NOTIFICATIONS runtime permission to
+     display the foreground service notification. -->
+     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
++    <uses-permission android:name="android.permission.WAKE_LOCK" />
+     <uses-feature android:name="android.hardware.location.gps" />
+ </manifest>
+   
+diff --git a/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocation.java b/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocation.java
+index a92fcf9bad0139d203964afb1550ea5ba03ce99b..395d9abaab859ac3a87d0bef91932b816ad5663c 100644
+--- a/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocation.java
++++ b/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocation.java
+@@ -19,6 +19,7 @@ import android.net.Uri;
+ import android.os.Build;
+ import android.os.IBinder;
+ import android.provider.Settings;
++import android.util.Log;
+ 
+ import com.getcapacitor.JSObject;
+ import com.getcapacitor.Logger;
+@@ -156,6 +157,16 @@ public class BackgroundGeolocation extends Plugin {
+ 
+             backgroundNotification = builder.build();
+         }
++        // Config de subida NATIVA: el servicio hara el POST al backend con estos
++        // datos (URL absoluta + JWT) para que el reporte sobreviva a la app
++        // cerrada / pantalla bloqueada, sin depender del JS/WebView.
++        Integer intervalSeconds = call.getInt("intervalSeconds", 0);
++        service.setUploadConfig(
++                call.getString("url"),
++                call.getString("authToken"),
++                call.getString("locale", "es-ES"),
++                intervalSeconds == null ? 0 : intervalSeconds.intValue()
++        );
+         service.addWatcher(
+                 call.getCallbackId(),
+                 backgroundNotification,
+@@ -163,6 +174,36 @@ public class BackgroundGeolocation extends Plugin {
+         );
+     }
+ 
++    // Apagado total del monitoreo (logout / fin de turno): detiene TODOS los
++    // watchers nativos, baja el servicio en primer plano y olvida el token. Sin
++    // esto, un watcher huerfano seguiria posteando ubicacion tras cerrar sesion.
++    @PluginMethod()
++    public void stopAll(PluginCall call) {
++        if (service != null) {
++            service.stopAll();
++        }
++        call.resolve();
++    }
++
++    // Refresca la config de subida sin reiniciar el watch. La usa el JS cuando el
++    // JWT rota (p.ej. al volver a primer plano) para que el POST nativo en
++    // background siga autenticando.
++    @PluginMethod()
++    public void updateUploadConfig(PluginCall call) {
++        if (service == null) {
++            call.reject("Service not running.");
++            return;
++        }
++        Integer intervalSeconds = call.getInt("intervalSeconds", 0);
++        service.setUploadConfig(
++                call.getString("url"),
++                call.getString("authToken"),
++                call.getString("locale", "es-ES"),
++                intervalSeconds == null ? 0 : intervalSeconds.intValue()
++        );
++        call.resolve();
++    }
++
+     @PermissionCallback
+     private void locationPermissionsCallback(PluginCall call) {
+ 
+@@ -255,7 +296,18 @@ public class BackgroundGeolocation extends Plugin {
+             }
+             Location location = intent.getParcelableExtra("location");
+             if (location != null) {
+-                call.resolve(formatLocation(location));
++                JSObject obj = formatLocation(location);
++                // El servicio adjunta la ultima respuesta del backend (estado de
++                // zona, intervalo, etc.) para que el JS pinte la UI sin tener que
++                // postear el mismo (en nativo, el upload lo hace el servicio).
++                String serverResponse = intent.getStringExtra("serverResponse");
++                if (serverResponse != null) {
++                    obj.put("serverResponse", serverResponse);
++                }
++                obj.put("serverOk", intent.getBooleanExtra("serverOk", false));
++                obj.put("gpsActivo", intent.getBooleanExtra("gpsActivo", true));
++                obj.put("proveedor", intent.getStringExtra("proveedor"));
++                call.resolve(obj);
+             } else {
+                 Logger.debug("No locations received");
+             }
+@@ -280,6 +332,7 @@ public class BackgroundGeolocation extends Plugin {
+     @Override
+     public void load() {
+         super.load();
++        Log.d("GPS-CHECK", "Plugin load() called - PATCHED VERSION ACTIVA");
+ 
+         // Android O requires a Notification Channel.
+         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+@@ -300,8 +353,19 @@ public class BackgroundGeolocation extends Plugin {
+             manager.createNotificationChannel(channel);
+         }
+ 
++        // Iniciar el servicio (started + bound) para que START_STICKY aplique y
++        // sobreviva a la destruccion de la Activity, incluso en ROMs agresivas
++        // (XOS, MIUI). Usamos startService PLANO (no startForegroundService):
++        // load() corre con la app en primer plano, asi que es legal, y evita el
++        // requisito de llamar startForeground() en <5s que crashea la app
++        // (ForegroundServiceDidNotStartInTimeException) cuando addWatcher tarda.
++        // El servicio se promueve a foreground dentro de addWatcher (notificacion
++        // real) o en onStartCommand al recuperarse tras un kill.
++        Intent srvIntent = new Intent(this.getContext(), BackgroundGeolocationService.class);
++        getContext().startService(srvIntent);
++
+         this.getContext().bindService(
+-                new Intent(this.getContext(), BackgroundGeolocationService.class),
++                srvIntent,
+                 new ServiceConnection() {
+                     @Override
+                     public void onServiceConnected(ComponentName name, IBinder binder) {
+@@ -339,9 +403,9 @@ public class BackgroundGeolocation extends Plugin {
+ 
+     @Override
+     protected void handleOnDestroy() {
+-        if (service != null) {
+-            service.stopService();
+-        }
++        // No detener el servicio: Android (especialmente XOS y ROMs chinas) destruye
++        // la Activity agresivamente en segundo plano, y si matamos el servicio aquí
++        // el GPS deja de funcionar hasta que el usuario vuelva a abrir la app.
+         super.handleOnDestroy();
+     }
+ }
+diff --git a/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocationService.java b/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocationService.java
+index fafbb8694160595444073a8c6cec111b60b3fce0..d7c13af136d67b01eb6de3643bbe716f732d283f 100644
+--- a/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocationService.java
++++ b/android/src/main/java/com/equimaps/capacitor_background_geolocation/BackgroundGeolocationService.java
+@@ -1,23 +1,39 @@
+ package com.equimaps.capacitor_background_geolocation;
+ 
+ import android.app.Notification;
++import android.app.NotificationChannel;
++import android.app.NotificationManager;
+ import android.app.Service;
++import android.content.Context;
+ import android.content.Intent;
++import android.content.SharedPreferences;
+ import android.content.pm.ServiceInfo;
+ import android.location.Location;
++import android.location.LocationListener;
++import android.location.LocationManager;
+ import android.os.Binder;
+ import android.os.Build;
++import android.os.Bundle;
++import android.os.Handler;
+ import android.os.IBinder;
++import android.os.Looper;
++import android.os.PowerManager;
++import android.util.Log;
+ 
+ import com.getcapacitor.Logger;
+-import com.google.android.gms.location.FusedLocationProviderClient;
+-import com.google.android.gms.location.LocationAvailability;
+-import com.google.android.gms.location.LocationCallback;
+-import com.google.android.gms.location.LocationRequest;
+-import com.google.android.gms.location.LocationResult;
+-import com.google.android.gms.location.LocationServices;
+ 
++import org.json.JSONObject;
++
++import java.io.BufferedReader;
++import java.io.InputStream;
++import java.io.InputStreamReader;
++import java.io.OutputStream;
++import java.net.HttpURLConnection;
++import java.net.URL;
++import java.nio.charset.StandardCharsets;
+ import java.util.HashSet;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
+ 
+ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+ 
+@@ -32,33 +48,95 @@ public class BackgroundGeolocationService extends Service {
+ 
+     // Must be unique for this application.
+     private static final int NOTIFICATION_ID = 28351;
++    private static final long HEARTBEAT_MS = 60_000L; // 60s
++    private static final long GPS_MIN_TIME_MS = 1000L;  // 1 segundo
++    private static final long NET_MIN_TIME_MS = 5000L;  // 5 segundos (fallback)
++    private static final String PREFS = "bg_geo_upload";
++    private static final String RECOVERY_CHANNEL = "bg_geolocation";
+ 
+     private class Watcher {
+         public String id;
+-        public FusedLocationProviderClient client;
+-        public LocationRequest locationRequest;
+-        public LocationCallback locationCallback;
++        public LocationManager locationManager;
++        public LocationListener locationListener;
+         public Notification backgroundNotification;
++        public float distanceFilter;
+     }
+     private HashSet<Watcher> watchers = new HashSet<Watcher>();
++    private Location lastLocation = null;
++    private PowerManager.WakeLock wakeLock = null;
++    private Handler heartbeatHandler = null;
++    private Runnable heartbeatTask = null;
++
++    // ── Subida HTTP nativa ───────────────────────────────────────────────────
++    // El POST al backend lo hace ESTE servicio (no el JavaScript). Asi sobrevive
++    // a que la ROM congele/mate la WebView con la pantalla bloqueada o la app
++    // cerrada. La config se persiste en SharedPreferences para que un reinicio
++    // por START_STICKY (sin JS vivo) pueda seguir reportando.
++    private final ExecutorService httpExecutor = Executors.newSingleThreadExecutor();
++    private volatile String backendUrl = null;   // ej: http://192.168.20.145:8085
++    private volatile String authToken = null;    // JWT Bearer
++    private volatile String locale = "es-ES";
++    private volatile long postIntervalMs = 120_000L;  // adaptativo (lo ajusta el backend)
++    private volatile long lastPostMs = 0L;
++    private volatile String lastServerResponse = null; // JSON 'data' de la ultima respuesta OK
++    private volatile boolean lastServerOk = false;
++    private volatile boolean gpsActivo = true;     // true mientras el GPS_PROVIDER este habilitado
++    private volatile long ultimoFixGpsMs = 0L;     // timestamp del ultimo fix de GPS (0 = nunca)
+ 
+     @Override
+     public IBinder onBind(Intent intent) {
+         return binder;
+     }
+ 
+-    // Some devices allow a foreground service to outlive the application's main
+-    // activity, leading to nasty crashes as reported in issue #59. If we learn
+-    // that the application has been killed, all watchers are stopped and the
+-    // service is terminated immediately.
++    // START_STICKY: si el sistema mata el servicio (por presion de memoria o
++    // ROM agresiva), Android lo recreara automaticamente cuando pueda.
+     @Override
+-    public boolean onUnbind(Intent intent) {
+-        for (Watcher watcher : watchers) {
+-            watcher.client.removeLocationUpdates(watcher.locationCallback);
++    public int onStartCommand(Intent intent, int flags, int startId) {
++        Log.d("GPS-CHECK", "onStartCommand - watchers=" + watchers.size() + " intent=" + intent);
++
++        // RECOVERY: solo en un REINICIO real por START_STICKY (proceso muerto).
++        // Android entrega intent==null al recrear un servicio sticky; en el arranque
++        // normal (startService desde load()) el intent es explicito (no null) y el
++        // JS llamara addWatcher en breve, asi que NO recuperamos (evita un watcher
++        // "recovery" huerfano que removeWatcher no limpiaria -> fuga de GPS tras
++        // logout). En la recuperacion no hay WebView/JS, asi que debemos:
++        //  1) recuperar la config de subida persistida,
++        //  2) volvernos foreground de forma legal (notificacion + startForeground),
++        //  3) re-registrar el GPS y reanudar los POST NATIVOS sin depender del JS.
++        if (intent == null && watchers.isEmpty()) {
++            Log.d("GPS-CHECK", "onStartCommand - RECOVERY: reinicio sticky, recuperando");
++            loadUploadConfigFromPrefs();
++            if (backendUrl == null || authToken == null) {
++                // Sin sesion persistida (logout / nunca arranco) no hay a quien
++                // reportar: detener el servicio en vez de gastar GPS en vano.
++                Log.d("GPS-CHECK", "onStartCommand - RECOVERY sin config, deteniendo");
++                stopSelf();
++                return START_NOT_STICKY;
++            }
++            try {
++                startForeground(NOTIFICATION_ID, buildFallbackNotification());
++            } catch (Exception e) {
++                Log.e("GPS-CHECK", "Recovery - startForeground error: " + e.getMessage());
++            }
++            registerRecoveryWatcher();
++            acquireWakeLock();
++            startHeartbeat();
+         }
+-        watchers = new HashSet<Watcher>();
+-        stopSelf();
+-        return false;
++
++        return START_STICKY;
++    }
++
++    @Override
++    public boolean onUnbind(Intent intent) {
++        return true;
++    }
++
++    @Override
++    public void onDestroy() {
++        stopHeartbeat();
++        releaseWakeLock();
++        httpExecutor.shutdown();
++        super.onDestroy();
+     }
+ 
+     Notification getNotification() {
+@@ -70,106 +148,454 @@ public class BackgroundGeolocationService extends Service {
+         return null;
+     }
+ 
++    private void acquireWakeLock() {
++        if (wakeLock == null) {
++            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
++            wakeLock = pm.newWakeLock(
++                    PowerManager.PARTIAL_WAKE_LOCK,
++                    "BackgroundGeolocation:LocationWakeLock"
++            );
++            wakeLock.acquire(10 * 60 * 1000L); // 10 min timeout safety
++        }
++    }
++
++    private void releaseWakeLock() {
++        if (wakeLock != null && wakeLock.isHeld()) {
++            wakeLock.release();
++            wakeLock = null;
++        }
++    }
++
++    private void startHeartbeat() {
++        if (heartbeatHandler != null) return;
++        heartbeatHandler = new Handler(Looper.getMainLooper());
++        heartbeatTask = new Runnable() {
++            @Override
++            public void run() {
++                tickHeartbeat();
++                heartbeatHandler.postDelayed(this, HEARTBEAT_MS);
++            }
++        };
++        heartbeatHandler.postDelayed(heartbeatTask, HEARTBEAT_MS);
++    }
++
++    private void stopHeartbeat() {
++        if (heartbeatHandler != null && heartbeatTask != null) {
++            heartbeatHandler.removeCallbacks(heartbeatTask);
++        }
++        heartbeatHandler = null;
++        heartbeatTask = null;
++    }
++
++    // Heartbeat nativo: cada 60s re-postea nativamente la ultima ubicacion (cubre
++    // al usuario quieto y la recuperacion sin JS) y la reemite al JS si hay UI viva.
++    // Solo repostea si la ultima ubicacion es de GPS, o si GPS no ha dado
++    // señales en los ultimos 60s (NETWORK como respaldo indoor).
++    private void tickHeartbeat() {
++        if (lastLocation == null) return;
++        String provider = lastLocation.getProvider();
++        boolean gpsReciente = (System.currentTimeMillis() - ultimoFixGpsMs) < 60_000L;
++        boolean esNetwork = LocationManager.NETWORK_PROVIDER.equals(provider);
++        if (esNetwork && gpsReciente) return;
++        maybePostLocation(lastLocation, false);
++        for (Watcher watcher : watchers) {
++            broadcastLocation(lastLocation, watcher.id);
++        }
++    }
++
++    // Crea un LocationListener que postea nativamente y reemite broadcast al JS.
++    private LocationListener createListener(final String id) {
++        return new LocationListener() {
++            @Override
++            public void onLocationChanged(Location location) {
++                if (location == null) return;
++                String provider = location.getProvider();
++                boolean isGps = LocationManager.GPS_PROVIDER.equals(provider);
++                boolean isNetwork = LocationManager.NETWORK_PROVIDER.equals(provider);
++
++                // Actualizar timestamp si es fix de GPS
++                if (isGps) ultimoFixGpsMs = System.currentTimeMillis();
++
++                // Filtro: si llegó un fix de GPS hace menos de 30s, ignorar
++                // los fixes de NETWORK. El GPS es más preciso; las ubicaciones
++                // por WiFi/torre solo causan falsos saltos de zona.
++                boolean gpsReciente = (System.currentTimeMillis() - ultimoFixGpsMs) < 30_000L;
++                if (isNetwork && gpsReciente) {
++                    broadcastLocation(location, id);
++                    return;
++                }
++
++                // Filtro de precisión: si es NETWORK (GPS apagado o sin señal)
++                // y la precisión es > 100m, no postear (muy impreciso).
++                if (isNetwork) {
++                    float acc = location.hasAccuracy() ? location.getAccuracy() : 9999f;
++                    if (acc > 100f) {
++                        broadcastLocation(location, id);
++                        return;
++                    }
++                }
++
++                Log.d("GPS-CHECK", "onLocationChanged id=" + id + " provider=" + provider);
++                lastLocation = location;
++                maybePostLocation(location, false);
++                broadcastLocation(location, id);
++            }
++
++            @Override
++            public void onStatusChanged(String provider, int status, Bundle extras) {
++                Logger.debug("Location provider " + provider + " status: " + status);
++            }
++
++            @Override
++            public void onProviderEnabled(String provider) {
++                Log.d("GPS-CHECK", "Location provider " + provider + " enabled");
++                if (LocationManager.GPS_PROVIDER.equals(provider)) {
++                    gpsActivo = true;
++                }
++            }
++
++            @Override
++            public void onProviderDisabled(String provider) {
++                Log.d("GPS-CHECK", "Location provider " + provider + " disabled");
++                if (LocationManager.GPS_PROVIDER.equals(provider)) {
++                    gpsActivo = false;
++                }
++            }
++        };
++    }
++
++    // Reemite la ubicacion al JS (UI/mapa) adjuntando la ultima respuesta del
++    // servidor para que el front actualice zona/intervalo y el estado de senal.
++    private void broadcastLocation(Location location, String id) {
++        Intent intent = new Intent(ACTION_BROADCAST);
++        intent.putExtra("location", location);
++        intent.putExtra("id", id);
++        intent.putExtra("serverResponse", lastServerResponse);
++        intent.putExtra("serverOk", lastServerOk);
++        intent.putExtra("gpsActivo", gpsActivo);
++        intent.putExtra("proveedor", location.getProvider());
++        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
++    }
++
++    private void requestUpdatesFrom(Watcher watcher, String provider, long minTimeMs) {
++        try {
++            watcher.locationManager.requestLocationUpdates(
++                    provider,
++                    minTimeMs,
++                    watcher.distanceFilter,
++                    watcher.locationListener,
++                    Looper.getMainLooper()
++            );
++        } catch (SecurityException ignore) {
++        } catch (IllegalArgumentException e) {
++            Logger.warn("Provider " + provider + " not available: " + e.getMessage());
++        }
++    }
++
++    private void removeUpdatesFrom(Watcher watcher, String provider) {
++        try {
++            watcher.locationManager.removeUpdates(watcher.locationListener);
++        } catch (SecurityException ignore) {
++        }
++    }
++
++    // ── Config de subida (persistente) ───────────────────────────────────────
++    void setUploadConfig(String url, String token, String localeStr, long intervalSec) {
++        if (url != null && !url.isEmpty()) this.backendUrl = stripTrailingSlash(url);
++        if (token != null && !token.isEmpty()) this.authToken = token;
++        if (localeStr != null && !localeStr.isEmpty()) this.locale = localeStr;
++        if (intervalSec > 0) this.postIntervalMs = intervalSec * 1000L;
++        SharedPreferences sp = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
++        sp.edit()
++                .putString("url", this.backendUrl)
++                .putString("token", this.authToken)
++                .putString("locale", this.locale)
++                .putLong("intervalMs", this.postIntervalMs)
++                .apply();
++        Log.d("GPS-CHECK", "setUploadConfig url=" + this.backendUrl + " token=" + (this.authToken != null ? "(set)" : "null"));
++    }
++
++    private void loadUploadConfigFromPrefs() {
++        SharedPreferences sp = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
++        this.backendUrl = sp.getString("url", this.backendUrl);
++        this.authToken = sp.getString("token", this.authToken);
++        this.locale = sp.getString("locale", this.locale);
++        this.postIntervalMs = sp.getLong("intervalMs", this.postIntervalMs);
++    }
++
++    // Limpia la config (logout / ultimo watcher): un reinicio posterior NO debe
++    // seguir reportando con el token de un usuario que cerro sesion.
++    void clearUploadConfig() {
++        this.backendUrl = null;
++        this.authToken = null;
++        SharedPreferences sp = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
++        sp.edit().clear().apply();
++    }
++
++    private static String stripTrailingSlash(String s) {
++        return (s != null && s.endsWith("/")) ? s.substring(0, s.length() - 1) : s;
++    }
++
++    // ── POST nativo al backend ───────────────────────────────────────────────
++    private void maybePostLocation(Location loc, boolean force) {
++        if (loc == null) return;
++        if (backendUrl == null || authToken == null) return;  // sin config no se puede subir
++        long now = System.currentTimeMillis();
++        if (!force && (now - lastPostMs) < (long) (postIntervalMs * 0.9)) return;
++        lastPostMs = now;
++        final double lat = loc.getLatitude();
++        final double lon = loc.getLongitude();
++        // Precisión del fix: el backend la usa para no marcar falso "fuera de zona"
++        // con fixes imprecisos (NETWORK_PROVIDER). Sin accuracy -> 9999 (no confiable).
++        final float acc = loc.hasAccuracy() ? loc.getAccuracy() : 9999f;
++        httpExecutor.execute(new Runnable() {
++            @Override
++            public void run() {
++                postLocation(lat, lon, acc);
++            }
++        });
++    }
++
++    private void postLocation(double lat, double lon, float precision) {
++        HttpURLConnection conn = null;
++        try {
++            URL url = new URL(backendUrl + "/api/v1/monitoreo/ubicacion");
++            conn = (HttpURLConnection) url.openConnection();
++            conn.setRequestMethod("POST");
++            conn.setConnectTimeout(15000);
++            conn.setReadTimeout(15000);
++            conn.setDoOutput(true);
++            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
++            conn.setRequestProperty("Accept", "application/json");
++            if (authToken != null) conn.setRequestProperty("Authorization", "Bearer " + authToken);
++            if (locale != null) conn.setRequestProperty("Accept-Language", locale);
++
++            String body = "{\"latitud\":" + lat + ",\"longitud\":" + lon
++                    + ",\"precision\":" + precision + "}";
++            OutputStream os = conn.getOutputStream();
++            os.write(body.getBytes(StandardCharsets.UTF_8));
++            os.flush();
++            os.close();
++
++            int code = conn.getResponseCode();
++            Log.d("GPS-CHECK", "postLocation HTTP " + code + " lat=" + lat + " lon=" + lon + " acc=" + precision);
++            if (code >= 200 && code < 300) {
++                String resp = readStream(conn.getInputStream());
++                try {
++                    JSONObject json = new JSONObject(resp);
++                    int apiCode = json.optInt("code", -1);
++                    JSONObject data = json.optJSONObject("data");
++                    if (apiCode == 0 && data != null) {
++                        lastServerResponse = data.toString();
++                        lastServerOk = true;
++                        int nextSec = data.optInt("intervaloProximoEnvioSeg", 0);
++                        if (nextSec > 0) {
++                            postIntervalMs = nextSec * 1000L;
++                            persistInterval(nextSec);
++                        }
++                    } else {
++                        lastServerOk = false;
++                    }
++                } catch (Exception parse) {
++                    lastServerOk = false;
++                    Log.e("GPS-CHECK", "postLocation parse error: " + parse.getMessage());
++                }
++            } else {
++                // 401 (token vencido), 5xx, etc. -> sin senal confirmada.
++                lastServerOk = false;
++                readStream(conn.getErrorStream()); // drenar para reusar la conexion
++            }
++        } catch (Exception e) {
++            lastServerOk = false;
++            Log.e("GPS-CHECK", "postLocation error: " + e.getMessage());
++        } finally {
++            if (conn != null) conn.disconnect();
++        }
++    }
++
++    private void persistInterval(int sec) {
++        SharedPreferences sp = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
++        sp.edit().putLong("intervalMs", sec * 1000L).apply();
++    }
++
++    private String readStream(InputStream is) {
++        if (is == null) return "";
++        StringBuilder sb = new StringBuilder();
++        try {
++            BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
++            String line;
++            while ((line = r.readLine()) != null) sb.append(line);
++            r.close();
++        } catch (Exception ignore) {
++        }
++        return sb.toString();
++    }
++
++    // ── Notificacion de recuperacion (cuando no hay watcher con notificacion) ──
++    private void ensureChannel() {
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
++            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
++            if (nm != null && nm.getNotificationChannel(RECOVERY_CHANNEL) == null) {
++                NotificationChannel ch = new NotificationChannel(
++                        RECOVERY_CHANNEL,
++                        "Monitoreo de ubicacion",
++                        NotificationManager.IMPORTANCE_LOW
++                );
++                ch.setDescription("Mantiene el seguimiento GPS durante el turno.");
++                nm.createNotificationChannel(ch);
++            }
++        }
++    }
++
++    private Notification buildFallbackNotification() {
++        ensureChannel();
++        int icon = getApplicationInfo().icon;
++        Notification.Builder b;
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
++            b = new Notification.Builder(this, RECOVERY_CHANNEL);
++        } else {
++            b = new Notification.Builder(this);
++        }
++        b.setContentTitle("Monitoreo activo")
++                .setContentText("Seguimiento de ubicacion en curso.")
++                .setSmallIcon(icon)
++                .setOngoing(true);
++        return b.build();
++    }
++
++    private void registerRecoveryWatcher() {
++        LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
++        Watcher w = new Watcher();
++        w.id = "recovery";
++        w.locationManager = lm;
++        w.locationListener = createListener("recovery");
++        w.distanceFilter = 0f;
++        watchers.add(w);
++        requestUpdatesFrom(w, LocationManager.GPS_PROVIDER, GPS_MIN_TIME_MS);
++        requestUpdatesFrom(w, LocationManager.NETWORK_PROVIDER, NET_MIN_TIME_MS);
++    }
++
++    // Da de baja TODOS los watchers (corta sus updates de GPS/NETWORK) y vacia el
++    // set, SIN tocar el servicio/foreground/config. Lo usa addWatcher para ser
++    // idempotente (nuestra app usa un solo watcher; asi nunca se acumulan
++    // huerfanos que seguirian posteando tras un logout).
++    private void clearAllWatchersInternal() {
++        for (Watcher w : watchers) {
++            removeUpdatesFrom(w, LocationManager.GPS_PROVIDER);
++            removeUpdatesFrom(w, LocationManager.NETWORK_PROVIDER);
++        }
++        watchers.clear();
++    }
++
++    // Apagado TOTAL (logout / fin de monitoreo): corta todos los watchers, detiene
++    // heartbeat y wakelock, OLVIDA las credenciales (token) para que ni un reinicio
++    // por START_STICKY siga reportando, baja el foreground y detiene el servicio.
++    void stopEverything() {
++        Log.d("GPS-CHECK", "stopEverything - apagando monitoreo (logout)");
++        clearAllWatchersInternal();
++        stopHeartbeat();
++        releaseWakeLock();
++        clearUploadConfig();
++        try {
++            stopForeground(true);
++        } catch (Exception ignore) {
++        }
++        stopSelf();
++    }
++
+     // Handles requests from the activity.
+     public class LocalBinder extends Binder {
++        // Config de subida: el plugin la pasa con la URL del backend + el JWT del
++        // usuario para que el POST nativo pueda autenticarse en background.
++        void setUploadConfig(String url, String token, String localeStr, long intervalSec) {
++            BackgroundGeolocationService.this.setUploadConfig(url, token, localeStr, intervalSec);
++        }
++
+         void addWatcher(
+                 final String id,
+                 Notification backgroundNotification,
+                 float distanceFilter
+         ) {
+-            FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(
+-                    BackgroundGeolocationService.this
+-            );
+-            LocationRequest locationRequest = new LocationRequest();
+-            locationRequest.setMaxWaitTime(1000);
+-            locationRequest.setInterval(1000);
+-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+-            locationRequest.setSmallestDisplacement(distanceFilter);
+-
+-            LocationCallback callback = new LocationCallback(){
+-                @Override
+-                public void onLocationResult(LocationResult locationResult) {
+-                    Location location = locationResult.getLastLocation();
+-                    Intent intent = new Intent(ACTION_BROADCAST);
+-                    intent.putExtra("location", location);
+-                    intent.putExtra("id", id);
+-                    LocalBroadcastManager.getInstance(
+-                            getApplicationContext()
+-                    ).sendBroadcast(intent);
+-                }
+-                @Override
+-                public void onLocationAvailability(LocationAvailability availability) {
+-                    if (!availability.isLocationAvailable()) {
+-                        Logger.debug("Location not available");
+-                    }
+-                }
+-            };
++            Log.d("GPS-CHECK", "addWatcher id=" + id + " distanceFilter=" + distanceFilter);
++            // Idempotencia: limpiar cualquier watcher previo (incl. el de recovery
++            // o uno huerfano de un ciclo de foreground) para que SIEMPRE haya uno solo.
++            clearAllWatchersInternal();
++            LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
++            LocationListener listener = createListener(id);
+ 
+             Watcher watcher = new Watcher();
+             watcher.id = id;
+-            watcher.client = client;
+-            watcher.locationRequest = locationRequest;
+-            watcher.locationCallback = callback;
++            watcher.locationManager = locationManager;
++            watcher.locationListener = listener;
+             watcher.backgroundNotification = backgroundNotification;
++            watcher.distanceFilter = distanceFilter;
+             watchers.add(watcher);
+ 
+-            // According to Android Studio, this method can throw a Security Exception if
+-            // permissions are not yet granted. Rather than check the permissions, which is fiddly,
+-            // we simply ignore the exception.
+-            try {
+-                watcher.client.requestLocationUpdates(
+-                        watcher.locationRequest,
+-                        watcher.locationCallback,
+-                        null
+-                );
+-            } catch (SecurityException ignore) {}
++            // GPS_PROVIDER: principal. Funciona directamente con el chip GPS,
++            // no depende de Google Play Services. Sigue funcionando con la
++            // pantalla bloqueada, incluso en ROMs agresivas (XOS, MIUI, etc.).
++            requestUpdatesFrom(watcher, LocationManager.GPS_PROVIDER, GPS_MIN_TIME_MS);
++
++            // NETWORK_PROVIDER: fallback para cuando el GPS no tiene senal
++            // (interior de edificios, tuneles, etc.). Menos preciso pero evita
++            // "Location not available" cuando no hay fix de GPS.
++            requestUpdatesFrom(watcher, LocationManager.NETWORK_PROVIDER, NET_MIN_TIME_MS);
+ 
+             // Promote the service to the foreground if necessary.
+-            // Ideally we would only call 'startForeground' if the service is not already
+-            // foregrounded. Unfortunately, 'getForegroundServiceType' was only introduced
+-            // in API level 29 and seems to behave weirdly, as reported in #120. However,
+-            // it appears that 'startForeground' is idempotent, so we just call it repeatedly
+-            // each time a background watcher is added.
+             if (backgroundNotification != null) {
+                 try {
+-                    // This method has been known to fail due to weird
+-                    // permission bugs, so we prevent any exceptions from
+-                    // crashing the app. See issue #86.
+                     startForeground(NOTIFICATION_ID, backgroundNotification);
+                 } catch (Exception exception) {
+                     Logger.error("Failed to foreground service", exception);
+                 }
+             }
++
++            // Adquirir wake lock para evitar que la ROM agresiva (XOS, MIUI, etc.)
++            // duerma la CPU y congele el proceso.
++            acquireWakeLock();
++            // Heartbeat nativo periodico como respaldo.
++            startHeartbeat();
+         }
+ 
+         void removeWatcher(String id) {
+             for (Watcher watcher : watchers) {
+                 if (watcher.id.equals(id)) {
+-                    watcher.client.removeLocationUpdates(watcher.locationCallback);
++                    removeUpdatesFrom(watcher, LocationManager.GPS_PROVIDER);
++                    removeUpdatesFrom(watcher, LocationManager.NETWORK_PROVIDER);
+                     watchers.remove(watcher);
+                     if (getNotification() == null) {
+                         stopForeground(true);
+                     }
++                    if (watchers.isEmpty()) {
++                        stopHeartbeat();
++                        releaseWakeLock();
++                        // Logout / fin de turno: olvidar credenciales para que un
++                        // reinicio por START_STICKY no siga reportando.
++                        clearUploadConfig();
++                    }
+                     return;
+                 }
+             }
+         }
+ 
+         void onPermissionsGranted() {
+-            // If permissions were granted while the app was in the background, for example in
+-            // the Settings app, the watchers need restarting.
+             for (Watcher watcher : watchers) {
+-                watcher.client.removeLocationUpdates(watcher.locationCallback);
+-                watcher.client.requestLocationUpdates(
+-                        watcher.locationRequest,
+-                        watcher.locationCallback,
+-                        null
+-                );
++                removeUpdatesFrom(watcher, LocationManager.GPS_PROVIDER);
++                removeUpdatesFrom(watcher, LocationManager.NETWORK_PROVIDER);
++                requestUpdatesFrom(watcher, LocationManager.GPS_PROVIDER, GPS_MIN_TIME_MS);
++                requestUpdatesFrom(watcher, LocationManager.NETWORK_PROVIDER, NET_MIN_TIME_MS);
+             }
+         }
+ 
+         void stopService() {
++            stopHeartbeat();
++            releaseWakeLock();
+             BackgroundGeolocationService.this.stopSelf();
+         }
++
++        // Apagado total para el logout (lo invoca el plugin via stopAll()).
++        void stopAll() {
++            BackgroundGeolocationService.this.stopEverything();
++        }
+     }
+ }
+diff --git a/definitions.d.ts b/definitions.d.ts
+index 5ae4202525c77934c97c9a42e402309178318707..32ee56976c2bc74750164cc7001e3afd4adf3b8b 100644
+--- a/definitions.d.ts
++++ b/definitions.d.ts
+@@ -67,6 +67,15 @@ export interface Location {
+      * `true` if the location was simulated by software, rather than GPS.
+      */
+     simulated: boolean;
++    /**
++     * `true` if the GPS provider is currently enabled on the device.
++     * `false` when GPS is turned off (only network/cell location available).
++     */
++    gpsActivo?: boolean;
++    /**
++     * The provider that generated this fix: "gps" or "network".
++     */
++    proveedor?: string;
+     /**
+      * Deviation from true north in degrees (or null).
+      */

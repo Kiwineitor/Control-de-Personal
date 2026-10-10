@@ -1,0 +1,16 @@
+{
+  "title": "Demonstrações",
+  "naive": "Naive UI",
+  "table": "Tabela",
+  "form": "Formulário",
+  "vben": {
+    "title": "Projeto",
+    "about": "Sobre",
+    "document": "Documentação",
+    "antdv": "Versão Ant Design Vue",
+    "antdv-next": "Versão Antdv Next",
+    "naive-ui": "Versão Naive UI",
+    "element-plus": "Versão Element Plus",
+    "tdesign": "Versão TDesign Vue"
+  }
+}

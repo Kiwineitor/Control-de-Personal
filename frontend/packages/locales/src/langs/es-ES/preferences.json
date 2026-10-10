@@ -1,0 +1,230 @@
+{
+  "title": "Preferencias",
+  "subtitle": "Personalizar preferencias y vista previa en tiempo real",
+  "enableStickyPreferencesNavigationBar": "Activar barra de navegación fija",
+  "disableStickyPreferencesNavigationBar": "Desactivar barra de navegación fija",
+  "resetTitle": "Restablecer preferencias",
+  "resetTip": "Los datos han cambiado, haz clic para restablecer",
+  "resetSuccess": "Preferencias restablecidas con éxito",
+  "appearance": "Apariencia",
+  "layout": "Diseño",
+  "content": "Contenido",
+  "other": "Otros",
+  "wide": "Fluido",
+  "compact": "Ancho fijo",
+  "followSystem": "Seguir sistema",
+  "vertical": "Vertical",
+  "verticalTip": "Modo de menú vertical lateral",
+  "horizontal": "Horizontal",
+  "horizontalTip": "Modo de menú horizontal, todos los menús se muestran en la parte superior",
+  "twoColumn": "Dos columnas",
+  "twoColumnTip": "Modo de menú vertical de dos columnas",
+  "headerSidebarNav": "Navegación lateral",
+  "headerSidebarNavTip": "Encabezado completo, modo de navegación lateral",
+  "headerTwoColumn": "Mixto dos columnas",
+  "headerTwoColumnTip": "Modo de coexistencia de menú horizontal y de dos columnas",
+  "mixedMenu": "Mixto vertical",
+  "mixedMenuTip": "Coexistencia de menú vertical y horizontal",
+  "fullContent": "Contenido a pantalla completa",
+  "fullContentTip": "No mostrar ningún menú, solo mostrar el cuerpo del contenido",
+  "normal": "Normal",
+  "plain": "Plano",
+  "rounded": "Redondeado",
+  "copyPreferences": "Copiar preferencias",
+  "enableCopyPreferences": "Mostrar botón de copiar preferencias",
+  "copyPreferencesSuccessTitle": "Copiado con éxito",
+  "copyPreferencesSuccess": "Copiado con éxito, por favor sobrescriba en `src/preferences.ts` dentro de la app",
+  "clearAndLogout": "Limpiar caché y cerrar sesión",
+  "mode": "Modo",
+  "general": "General",
+  "language": "Idioma",
+  "dynamicTitle": "Título dinámico",
+  "watermark": "Marca de agua",
+  "watermarkContent": "Ingrese el texto de la marca de agua",
+  "checkUpdates": "Comprobar actualizaciones periódicamente",
+  "position": {
+    "title": "Posición de preferencias",
+    "header": "Barra superior",
+    "auto": "Automático",
+    "fixed": "Fijo"
+  },
+  "sidebar": {
+    "buttons": "Mostrar botones",
+    "buttonFixed": "Botón fijo",
+    "buttonCollapsed": "Botón colapsado",
+    "title": "Barra lateral",
+    "width": "Ancho",
+    "visible": "Mostrar barra lateral",
+    "draggable": "Arrastrar menú de la barra lateral",
+    "collapsed": "Colapsar menú",
+    "collapsedShowTitle": "Mostrar título al colapsar",
+    "autoActivateChild": "Activar submenú automáticamente",
+    "autoActivateChildTip": "Al hacer clic en el menú superior, se activa automáticamente el primer submenú o el último activo",
+    "expandOnHover": "Expandir al pasar el ratón",
+    "expandOnHoverTip": "Cuando el ratón flota sobre el área colapsada, 'Activar' expande el submenú actual, 'Desactivar' expande toda la barra lateral"
+  },
+  "tabbar": {
+    "title": "Barra de pestañas",
+    "enable": "Habilitar barra de pestañas",
+    "icon": "Mostrar iconos en pestañas",
+    "showMore": "Mostrar botón 'Más'",
+    "showMaximize": "Mostrar botón maximizar",
+    "persist": "Persistir pestañas",
+    "visitHistory": "Historial de visitas",
+    "visitHistoryTip": "Al activar, la barra registra el historial; al cerrar la pestaña actual, selecciona la anterior abierta",
+    "maxCount": "Número máximo de pestañas",
+    "maxCountTip": "Si se supera el máximo, se cerrará automáticamente la pestaña más antigua. 0 para sin límite",
+    "draggable": "Habilitar arrastrar para ordenar",
+    "wheelable": "Habilitar respuesta de rueda vertical",
+    "middleClickClose": "Cerrar pestaña con clic central",
+    "wheelableTip": "Al activar, el área de pestañas responde al scroll vertical. Desactivado solo responde al scroll horizontal del sistema (Shift + Rueda)",
+    "styleType": {
+      "title": "Estilo de pestañas",
+      "chrome": "Google",
+      "card": "Tarjeta",
+      "plain": "Plano",
+      "brisk": "Ágil"
+    },
+    "contextMenu": {
+      "reload": "Recargar",
+      "close": "Cerrar",
+      "pin": "Fijar",
+      "unpin": "Desprender",
+      "closeLeft": "Cerrar pestañas a la izquierda",
+      "closeRight": "Cerrar pestañas a la derecha",
+      "closeOther": "Cerrar otras pestañas",
+      "closeAll": "Cerrar todas las pestañas",
+      "openInNewWindow": "Abrir en nueva ventana",
+      "maximize": "Maximizar",
+      "restoreMaximize": "Restaurar"
+    }
+  },
+  "navigationMenu": {
+    "title": "Menú de navegación",
+    "style": "Estilo del menú de navegación",
+    "accordion": "Modo acordeón en menú lateral",
+    "split": "Separar menú de navegación",
+    "splitTip": "Al activar, la barra lateral muestra los submenús correspondientes al menú superior"
+  },
+  "breadcrumb": {
+    "title": "Migas de pan (Breadcrumb)",
+    "enable": "Activar migas de pan",
+    "icon": "Mostrar iconos en migas de pan",
+    "home": "Mostrar botón de inicio",
+    "style": "Estilo de migas de pan",
+    "hideOnlyOne": "Ocultar si solo hay uno",
+    "background": "Fondo"
+  },
+  "animation": {
+    "title": "Animación",
+    "loading": "Carga de cambio de página",
+    "transition": "Animación de transición de página",
+    "progress": "Barra de progreso de cambio de página"
+  },
+  "theme": {
+    "title": "Tema",
+    "radius": "Radio de esquina (Bordes)",
+    "fontSize": "Tamaño de fuente",
+    "fontSizeTip": "Ajusta el tamaño de fuente global con vista previa en tiempo real",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "darkSidebar": "Barra lateral oscura",
+    "darkSidebarTip": "Disponible cuando el tema es claro y el diseño no es horizontal o pantalla completa",
+    "darkSidebarSub": "Sub-barra lateral oscura",
+    "darkSidebarSubTip": "Disponible en modo de dos columnas con barra lateral oscura activada",
+    "darkHeader": "Cabecera oscura",
+    "weakMode": "Modo debilidad de color",
+    "grayMode": "Modo gris",
+    "builtin": {
+      "title": "Temas integrados",
+      "default": "Predeterminado",
+      "violet": "Violeta",
+      "pink": "Rosa cereza",
+      "rose": "Rojo rosa",
+      "skyBlue": "Azul cielo",
+      "deepBlue": "Azul profundo",
+      "green": "Verde claro",
+      "deepGreen": "Verde oscuro",
+      "orange": "Naranja",
+      "yellow": "Amarillo limón",
+      "zinc": "Gris zinc",
+      "neutral": "Neutral",
+      "slate": "Pizarra",
+      "gray": "Gris medio",
+      "custom": "Personalizado"
+    }
+  },
+  "header": {
+    "title": "Cabecera",
+    "modeStatic": "Estático",
+    "modeFixed": "Fijo",
+    "modeAuto": "Ocultar y mostrar automáticamente",
+    "modeAutoScroll": "Ocultar y mostrar al desplazar",
+    "visible": "Mostrar cabecera",
+    "menuAlign": "Alineación del menú",
+    "menuAlignStart": "Izquierda",
+    "menuAlignEnd": "Derecha",
+    "menuAlignCenter": "Centro"
+  },
+  "footer": {
+    "title": "Pie de página",
+    "visible": "Mostrar pie de página",
+    "fixed": "Fijo en la parte inferior"
+  },
+  "copyright": {
+    "title": "Copyright",
+    "enable": "Habilitar copyright",
+    "companyName": "Nombre de la empresa",
+    "companySiteLink": "Enlace del sitio web",
+    "date": "Fecha",
+    "icp": "Número de registro ICP",
+    "icpLink": "Enlace al sitio ICP"
+  },
+  "shortcutKeys": {
+    "title": "Atajos de teclado",
+    "global": "Global",
+    "search": "Búsqueda global",
+    "logout": "Cerrar sesión",
+    "preferences": "Preferencias"
+  },
+  "widget": {
+    "title": "Widgets",
+    "globalSearch": "Habilitar búsqueda global",
+    "fullscreen": "Habilitar pantalla completa",
+    "themeToggle": "Habilitar cambio de tema",
+    "languageToggle": "Habilitar cambio de idioma",
+    "notification": "Habilitar notificaciones",
+    "sidebarToggle": "Habilitar cambio de barra lateral",
+    "lockScreen": "Habilitar bloqueo de pantalla",
+    "refresh": "Habilitar refresco",
+    "timezone": "Habilitar zona horaria"
+  },
+  "antd": {
+    "tabLabel": "Extensión Antd",
+    "title": "Preferencias de negocio",
+    "fields": {
+      "enableFormFullscreen": {
+        "label": "Habilitar modo formulario pantalla completa",
+        "tip": "Los subproyectos pueden leer esta configuración extendida en sus propios escenarios."
+      },
+      "tenantMode": {
+        "label": "Modo multi-inquilino (Tenant)",
+        "options": {
+          "single": {
+            "label": "Inquilino único"
+          },
+          "multi": {
+            "label": "Multi-inquilino"
+          }
+        }
+      },
+      "defaultTableSize": {
+        "label": "Tamaño de paginación predeterminado"
+      },
+      "reportTitle": {
+        "label": "Título predeterminado del informe",
+        "placeholder": "Ingrese el título predeterminado del informe"
+      }
+    }
+  }
+}

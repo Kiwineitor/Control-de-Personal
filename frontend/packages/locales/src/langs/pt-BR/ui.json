@@ -1,0 +1,165 @@
+{
+  "formRules": {
+    "required": "Por favor, insira {0}",
+    "selectRequired": "Por favor, selecione {0}",
+    "minLength": "{0} deve ter pelo menos {1} caracteres",
+    "maxLength": "{0} não pode ultrapassar {1} caracteres",
+    "length": "O comprimento de {0} deve ser de {1} caracteres",
+    "alreadyExists": "{0} `{1}` já existe",
+    "startWith": "{0} deve começar com {1}",
+    "invalidURL": "Por favor, insira um link válido",
+    "sizeLimit": "O tamanho do arquivo não pode ultrapassar {0}MB",
+    "previewWarning": "Não é possível abrir o arquivo, não há URL ou endereço de visualização disponível"
+  },
+  "actionTitle": {
+    "edit": "Modificar {0}",
+    "create": "Adicionar {0}",
+    "delete": "Excluir {0}",
+    "view": "Visualizar {0}"
+  },
+  "actionMessage": {
+    "deleteConfirm": "Tem certeza que deseja excluir {0}?",
+    "deleting": "Excluindo {0}...",
+    "deleteSuccess": "{0} excluído com sucesso",
+    "operationSuccess": "Operação realizada com sucesso",
+    "operationFailed": "A operação falhou"
+  },
+  "placeholder": {
+    "input": "Por favor, insira",
+    "select": "Por favor, selecione",
+    "upload": "Clique para enviar"
+  },
+  "captcha": {
+    "title": "Por favor, complete a verificação de segurança",
+    "sliderSuccessText": "Verificação aprovada",
+    "sliderDefaultText": "Mantenha pressionado e deslize",
+    "sliderRotateDefaultTip": "Clique na imagem para atualizar",
+    "sliderTranslateDefaultTip": "Clique na imagem para atualizar",
+    "sliderRotateFailTip": "Verificação falhou",
+    "sliderRotateSuccessTip": "Verificação bem-sucedida, levou {0} segundos",
+    "sliderTranslateFailTip": "Verificação falhou",
+    "sliderTranslateSuccessTip": "Verificação bem-sucedida, levou {0} segundos",
+    "alt": "Suporta valores do atributo src da tag img",
+    "refreshAriaLabel": "Atualizar código de verificação",
+    "confirmAriaLabel": "Confirmar seleção",
+    "confirm": "Confirmar",
+    "pointAriaLabel": "Ponto de clique",
+    "clickInOrder": "Por favor, clique em ordem"
+  },
+  "iconPicker": {
+    "placeholder": "Selecione um ícone",
+    "search": "Buscar ícone..."
+  },
+  "jsonViewer": {
+    "copy": "Copiar",
+    "copied": "Copiado"
+  },
+  "crop": {
+    "title": "Recortar imagem",
+    "titleTip": "Proporção de recorte {0}",
+    "confirm": "Recortar",
+    "cancel": "Cancelar recorte",
+    "errorTip": "Erro ao recortar"
+  },
+  "tiptap": {
+    "placeholder": "Escreva algo...",
+    "prompts": {
+      "image": "Insira o endereço da imagem",
+      "link": "Insira o endereço do link"
+    },
+    "toolbar": {
+      "bold": "Negrito",
+      "italic": "Itálico",
+      "underline": "Sublinhado",
+      "strike": "Tachado",
+      "code": "Código inline",
+      "codeBlock": "Bloco de código",
+      "heading": "Título",
+      "paragraph": "Parágrafo",
+      "heading1": "Título 1",
+      "heading2": "Título 2",
+      "heading3": "Título 3",
+      "heading4": "Título 4",
+      "bulletList": "Lista com marcadores",
+      "orderedList": "Lista numerada",
+      "blockquote": "Citação",
+      "link": "Link",
+      "unlink": "Remover link",
+      "image": "Imagem",
+      "imageUrl": "URL da imagem",
+      "imageUpload": "Enviar do computador",
+      "textColor": "Cor do texto",
+      "highlightColor": "Cor de destaque",
+      "alignLeft": "Alinhar à esquerda",
+      "alignCenter": "Centralizar",
+      "alignRight": "Alinhar à direita",
+      "preview": "Visualizar",
+      "undo": "Desfazer",
+      "redo": "Refazer",
+      "clear": "Limpar"
+    },
+    "upload": {
+      "fileTooLarge": "O tamanho do arquivo excede o limite",
+      "fileTypeNotAllowed": "Tipo de arquivo não suportado",
+      "onlySingleImage": "Apenas uma imagem pode ser enviada, a primeira foi selecionada",
+      "uploadFailed": "Erro ao enviar"
+    }
+  },
+  "fallback": {
+    "pageNotFound": "Ops! Página não encontrada",
+    "pageNotFoundDesc": "Desculpe, não conseguimos encontrar a página que você procura.",
+    "forbidden": "Ops! Acesso negado",
+    "forbiddenDesc": "Desculpe, você não tem permissão para acessar esta página.",
+    "internalError": "Ops! Algo deu errado",
+    "internalErrorDesc": "Desculpe, o servidor encontrou um erro.",
+    "offline": "Página offline",
+    "offlineError": "Ops! Erro de rede",
+    "offlineErrorDesc": "Desculpe, não é possível conectar à internet. Verifique sua conexão e tente novamente.",
+    "comingSoon": "Em breve",
+    "http": {
+      "requestTimeout": "Tempo de espera esgotado, tente novamente mais tarde.",
+      "networkError": "Erro de rede, verifique sua conexão e tente novamente.",
+      "badRequest": "Erro na solicitação. Verifique os dados e tente novamente.",
+      "unauthorized": "A sessão expirou, faça login novamente para continuar.",
+      "forbidden": "Acesso proibido, você não tem permissão para este recurso.",
+      "notFound": "Não encontrado, o recurso solicitado não existe.",
+      "internalServerError": "Erro interno do servidor, tente novamente mais tarde."
+    }
+  },
+  "widgets": {
+    "document": "Documentação",
+    "qa": "Perguntas e Ajuda",
+    "setting": "Configurações",
+    "logoutTip": "Deseja sair?",
+    "viewAll": "Ver todas as mensagens",
+    "notifications": "Notificações",
+    "markAllAsRead": "Marcar tudo como lido",
+    "clearNotifications": "Limpar",
+    "checkUpdatesTitle": "Nova versão disponível",
+    "checkUpdatesDescription": "Clique em atualizar para obter a versão mais recente",
+    "search": {
+      "title": "Buscar",
+      "searchNavigate": "Buscar no menu de navegação",
+      "select": "Selecionar",
+      "navigate": "Navegar",
+      "close": "Fechar",
+      "noResults": "Nenhum resultado encontrado",
+      "noRecent": "Sem histórico de busca",
+      "recent": "Histórico de busca"
+    },
+    "lockScreen": {
+      "title": "Tela bloqueada",
+      "screenButton": "Bloquear",
+      "password": "Senha",
+      "placeholder": "Insira a senha de bloqueio",
+      "unlock": "Clique para desbloquear",
+      "errorPasswordTip": "Senha incorreta, tente novamente",
+      "backToLogin": "Voltar ao login",
+      "entry": "Entrar no sistema"
+    },
+    "timezone": {
+      "setTimezone": "Configurar fuso horário",
+      "setSuccess": "Fuso horário configurado com sucesso"
+    }
+  }
+}

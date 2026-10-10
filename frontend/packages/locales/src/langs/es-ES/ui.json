@@ -1,0 +1,165 @@
+{
+  "formRules": {
+    "required": "Por favor, ingrese {0}",
+    "selectRequired": "Por favor, seleccione {0}",
+    "minLength": "{0} debe tener al menos {1} caracteres",
+    "maxLength": "{0} no puede superar los {1} caracteres",
+    "length": "La longitud de {0} debe ser de {1} caracteres",
+    "alreadyExists": "{0} `{1}` ya existe",
+    "startWith": "{0} debe comenzar con {1}",
+    "invalidURL": "Por favor, ingrese un enlace válido",
+    "sizeLimit": "El tamaño del archivo no puede superar los {0}MB",
+    "previewWarning": "No se puede abrir el archivo, no hay una URL o dirección de vista previa disponible"
+  },
+  "actionTitle": {
+    "edit": "Modificar {0}",
+    "create": "Añadir {0}",
+    "delete": "Eliminar {0}",
+    "view": "Ver {0}"
+  },
+  "actionMessage": {
+    "deleteConfirm": "¿Está seguro de que desea eliminar {0}?",
+    "deleting": "Eliminando {0}...",
+    "deleteSuccess": "{0} eliminado con éxito",
+    "operationSuccess": "Operación exitosa",
+    "operationFailed": "La operación ha fallado"
+  },
+  "placeholder": {
+    "input": "Por favor, ingrese",
+    "select": "Por favor, seleccione",
+    "upload": "Haga clic para subir"
+  },
+  "captcha": {
+    "title": "Por favor, complete la verificación de seguridad",
+    "sliderSuccessText": "Verificación aprobada",
+    "sliderDefaultText": "Mantenga presionado y deslice",
+    "sliderRotateDefaultTip": "Haga clic en la imagen para refrescar",
+    "sliderTranslateDefaultTip": "Haga clic en la imagen para refrescar",
+    "sliderRotateFailTip": "Verificación fallida",
+    "sliderRotateSuccessTip": "Verificación exitosa, tardó {0} segundos",
+    "sliderTranslateFailTip": "Verificación fallida",
+    "sliderTranslateSuccessTip": "Verificación exitosa, tardó {0} segundos",
+    "alt": "Soporta valores del atributo src de la etiqueta img",
+    "refreshAriaLabel": "Refrescar código de verificación",
+    "confirmAriaLabel": "Confirmar selección",
+    "confirm": "Confirmar",
+    "pointAriaLabel": "Punto de clic",
+    "clickInOrder": "Por favor, haga clic en orden"
+  },
+  "iconPicker": {
+    "placeholder": "Seleccione un icono",
+    "search": "Buscar icono..."
+  },
+  "jsonViewer": {
+    "copy": "Copiar",
+    "copied": "Copiado"
+  },
+  "crop": {
+    "title": "Recortar imagen",
+    "titleTip": "Proporción de recorte {0}",
+    "confirm": "Recortar",
+    "cancel": "Cancelar recorte",
+    "errorTip": "Error al recortar"
+  },
+  "tiptap": {
+    "placeholder": "Escriba algo...",
+    "prompts": {
+      "image": "Ingrese la dirección de la imagen",
+      "link": "Ingrese la dirección del enlace"
+    },
+    "toolbar": {
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "underline": "Subrayado",
+      "strike": "Tachado",
+      "code": "Código en línea",
+      "codeBlock": "Bloque de código",
+      "heading": "Título",
+      "paragraph": "Cuerpo de texto",
+      "heading1": "Título 1",
+      "heading2": "Título 2",
+      "heading3": "Título 3",
+      "heading4": "Título 4",
+      "bulletList": "Lista con viñetas",
+      "orderedList": "Lista numerada",
+      "blockquote": "Cita",
+      "link": "Enlace",
+      "unlink": "Eliminar enlace",
+      "image": "Imagen",
+      "imageUrl": "URL de imagen",
+      "imageUpload": "Subir desde local",
+      "textColor": "Color de texto",
+      "highlightColor": "Color de resaltado",
+      "alignLeft": "Alinear a la izquierda",
+      "alignCenter": "Centrar",
+      "alignRight": "Alinear a la derecha",
+      "preview": "Vista previa",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "clear": "Limpiar"
+    },
+    "upload": {
+      "fileTooLarge": "El tamaño del archivo excede el límite",
+      "fileTypeNotAllowed": "Tipo de archivo no admitido",
+      "onlySingleImage": "Solo se admite la subida de una imagen, se ha seleccionado la primera",
+      "uploadFailed": "Error al subir"
+    }
+  },
+  "fallback": {
+    "pageNotFound": "¡Vaya! Página no encontrada",
+    "pageNotFoundDesc": "Lo sentimos, no pudimos encontrar la página que busca.",
+    "forbidden": "¡Vaya! Acceso denegado",
+    "forbiddenDesc": "Lo sentimos, no tienes permiso para acceder a esta página.",
+    "internalError": "¡Vaya! Algo salió mal",
+    "internalErrorDesc": "Lo sentimos, el servidor encontró un error.",
+    "offline": "Página fuera de línea",
+    "offlineError": "¡Vaya! Error de red",
+    "offlineErrorDesc": "Lo sentimos, no se puede conectar a internet. Compruebe su conexión e inténtelo de nuevo.",
+    "comingSoon": "Próximamente",
+    "http": {
+      "requestTimeout": "Tiempo de espera agotado, inténtelo de nuevo más tarde.",
+      "networkError": "Error de red, compruebe su conexión e inténtelo de nuevo.",
+      "badRequest": "Error en la solicitud. Compruebe los datos e inténtelo de nuevo.",
+      "unauthorized": "La sesión ha expirado, inicie sesión de nuevo para continuar.",
+      "forbidden": "Acceso prohibido, no tiene permisos para este recurso.",
+      "notFound": "No encontrado, el recurso solicitado no existe.",
+      "internalServerError": "Error interno del servidor, inténtelo de nuevo más tarde."
+    }
+  },
+  "widgets": {
+    "document": "Documentación",
+    "qa": "Preguntas y Ayuda",
+    "setting": "Configuración",
+    "logoutTip": "¿Desea cerrar la sesión?",
+    "viewAll": "Ver todos los mensajes",
+    "notifications": "Notificaciones",
+    "markAllAsRead": "Marcar todo como leído",
+    "clearNotifications": "Limpiar",
+    "checkUpdatesTitle": "Nueva versión disponible",
+    "checkUpdatesDescription": "Haga clic en refrescar para obtener la última versión",
+    "search": {
+      "title": "Buscar",
+      "searchNavigate": "Buscar en el menú de navegación",
+      "select": "Seleccionar",
+      "navigate": "Navegar",
+      "close": "Cerrar",
+      "noResults": "No se encontraron resultados",
+      "noRecent": "Sin historial de búsqueda",
+      "recent": "Historial de búsqueda"
+    },
+    "lockScreen": {
+      "title": "Pantalla bloqueada",
+      "screenButton": "Bloquear",
+      "password": "Contraseña",
+      "placeholder": "Ingrese la contraseña de bloqueo",
+      "unlock": "Haga clic para desbloquear",
+      "errorPasswordTip": "Contraseña incorrecta, intente de nuevo",
+      "backToLogin": "Volver al inicio de sesión",
+      "entry": "Entrar al sistema"
+    },
+    "timezone": {
+      "setTimezone": "Configurar zona horaria",
+      "setSuccess": "Zona horaria configurada con éxito"
+    }
+  }
+}

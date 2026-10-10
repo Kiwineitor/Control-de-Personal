@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Configuración para tu IP específica -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- <domain includeSubdomains="true">192.168.20.145</domain> -->
+        <domain includeSubdomains="true">172.16.21.5</domain>
+        <!-- <domain includeSubdomains="true">192.168.1.5</domain> -->
+        <!-- Producción: el backend se sirve por HTTP plano en el 7050 -->
+        <domain includeSubdomains="true">virtual.uap.edu.bo</domain>
+    </domain-config>
+
+    <!-- CORRECCIÓN: Permite tráfico HTTP libre durante el desarrollo -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
